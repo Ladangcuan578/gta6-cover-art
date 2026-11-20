@@ -3,20 +3,160 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cover Snap</title>
+<title>Neon Shore Cover Lab — GTA-style cover art maker</title>
 <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-<main class="app">
-  <section class="controls">
-    <h1>Cover Snap</h1>
-    <p>A photo and a caption, made into a square cover.</p>
-    <label>Photo <input id="photo" type="file" accept="image/*"></label>
-    <label>Caption <input id="caption" type="text" maxlength="40" value="Sunset Heist"></label>
-    <button id="export" type="button">Export PNG 1080 x 1080</button>
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true">NS</span>
+    <div>
+      <h1>Neon Shore Cover Lab</h1>
+      <p>Turn your photos into GTA-style cover art. Offline, free, nothing uploaded.</p>
+    </div>
+  </div>
+  <div class="top-actions">
+    <button id="undo" type="button" title="Undo (Ctrl+Z)">↩ Undo</button>
+    <button id="redo" type="button" title="Redo (Ctrl+Shift+Z)">↪ Redo</button>
+    <button id="exportAll" type="button" class="primary">Export all sizes</button>
+  </div>
+</header>
+<nav class="steps" aria-label="Progress">
+  <span class="step" data-step="1"><b>1</b> Upload</span>
+  <span class="step" data-step="2"><b>2</b> Arrange</span>
+  <span class="step" data-step="3"><b>3</b> Lettering</span>
+  <span class="step" data-step="4"><b>4</b> Export</span>
+</nav>
+<main class="layout">
+  <section class="stage-col">
+    <div class="stage-wrap" id="dropZone">
+      <canvas id="stage" width="960" height="540" aria-label="Live cover preview"></canvas>
+      <div class="drop-hint" id="dropHint">Drop photos here to add them</div>
+    </div>
+    <div class="stage-bar">
+      <span id="panelLabel">Panel 1 of 8</span>
+      <label class="zoom">Zoom
+        <input id="zoom" type="range" min="1" max="3" step="0.01" value="1">
+      </label>
+      <button id="centerPanel" type="button">Center photo</button>
+      <label class="zoom">Preview
+        <input id="previewZoom" type="range" min="50" max="150" step="5" value="100">
+      </label>
+      <button id="compare" type="button" title="Hold to see the ungraded original (B)">Hold: Before</button>
+      <span class="hint">Drag a panel to move its photo · scroll over it to zoom</span>
+    </div>
+    <div id="panelChips" class="chips" role="group" aria-label="Panels"></div>
     <p id="status" role="status"></p>
+    <p class="keys">Shortcuts: Ctrl+Z undo · Ctrl+Shift+Z redo · E export all · B hold for before/after · ←→↑↓ nudge photo · 1–8 switch layout</p>
   </section>
-  <canvas id="cover" width="1080" height="1080" aria-label="The cover"></canvas>
+  <aside class="side">
+    <section class="card">
+      <h2>1 · Photos</h2>
+      <label class="file">Add photos from your machine
+        <input id="photoFiles" type="file" accept="image/*" multiple>
+      </label>
+      <p class="sub">Or try a built-in sample:</p>
+      <div id="samples" class="thumbs"></div>
+      <div class="row">
+        <button id="fillAll" type="button">Use this photo in every panel</button>
+        <button id="shuffle" type="button" title="Deal the photos out again at random">Shuffle photos</button>
+      </div>
+      <label>Photo for the selected panel
+        <select id="panelPhoto"></select>
+      </label>
+      <div id="thumbs" class="thumbs"></div>
+      <div class="row">
+        <button id="flipPanel" type="button">Flip photo</button>
+        <button id="rotatePanel" type="button">Rotate 90°</button>
+      </div>
+      <label>Border for the selected panel
+        <select id="panelBorder">
+          <option value="white">White ink</option>
+          <option value="black">Black ink</option>
+          <option value="neon">Neon pink</option>
+          <option value="none">No border</option>
+        </select>
+      </label>
+      <label>Grade for the selected panel
+        <select id="panelGrade">
+          <option value="global">Use the cover grade</option>
+        </select>
+      </label>
+    </section>
+    <section class="card">
+      <h2>2 · Presets</h2>
+      <div id="presetBtns" class="grid-btns"></div>
+    </section>
+    <section class="card">
+      <h2>3 · Layout</h2>
+      <div id="layoutBtns" class="grid-btns"></div>
+    </section>
+    <section class="card">
+      <h2>4 · Grade</h2>
+      <div id="gradeBtns" class="grid-btns"></div>
+      <label class="heat">Grade strength <input id="gradeStrength" type="range" min="0" max="100" step="5" value="85"> <span id="gradeStrengthVal">85%</span></label>
+    </section>
+    <section class="card">
+      <h2>5 · Lettering</h2>
+      <label>Title
+        <input id="title" type="text" maxlength="24" value="NEON SHORE">
+      </label>
+      <label>Subtitle
+        <input id="subtitle" type="text" maxlength="48" value="a neon coast story">
+      </label>
+      <label>Badge ribbon
+        <input id="badge" type="text" maxlength="16" value="EST. 2026">
+      </label>
+      <label>Title font
+        <select id="titleFont">
+          <option value="anton">Anton — tall condensed</option>
+          <option value="archivo">Archivo Black — heavy block</option>
+          <option value="bebas">Bebas Neue — clean caps</option>
+        </select>
+      </label>
+      <label>Title style
+        <select id="titleStyle">
+          <option value="gradient">Sunset gradient</option>
+          <option value="white">White</option>
+          <option value="neon">Neon glow</option>
+          <option value="outline">Outline only</option>
+        </select>
+      </label>
+      <label>Title position
+        <select id="titlePos">
+          <option value="auto">Auto (layout default)</option>
+          <option value="top">Top</option>
+          <option value="center">Center</option>
+          <option value="bottom">Bottom</option>
+        </select>
+      </label>
+      <label class="heat">Heat <input id="heat" type="range" min="0" max="5" step="1" value="4"> <span id="heatVal">★★★★☆</span></label>
+    </section>
+    <section class="card">
+      <h2>6 · Effects</h2>
+      <label class="check"><input id="grain" type="checkbox" checked> Film grain</label>
+      <label class="check"><input id="vignette" type="checkbox" checked> Vignette</label>
+      <label class="check"><input id="halftone" type="checkbox" checked> Halftone title block</label>
+    </section>
+    <section class="card">
+      <h2>7 · Export</h2>
+      <label>Preview size
+        <select id="previewSize">
+          <option value="1920x1080">Landscape 1920 × 1080</option>
+          <option value="1080x1080">Square 1080 × 1080</option>
+          <option value="1080x1350">Portrait 1080 × 1350</option>
+          <option value="1080x1920">Story 1080 × 1920</option>
+        </select>
+      </label>
+      <div class="row">
+        <button id="exp1920" type="button">PNG 1920 × 1080</button>
+        <button id="exp1080" type="button">PNG 1080 × 1080</button>
+        <button id="exp1350" type="button">PNG 1080 × 1350</button>
+        <button id="expStory" type="button">PNG 1080 × 1920</button>
+      </div>
+      <p class="note">Exports render at full HD resolution and are named after your title. Your photos never leave this machine.</p>
+    </section>
+  </aside>
 </main>
 <script type="module" src="./src/main.js"></script>
 </body>

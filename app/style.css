@@ -1,12 +1,148 @@
-html, body { margin: 0; height: 100%; background: #f2f0f4; color: #1d1b22; font: 15px/1.4 system-ui, sans-serif; }
-.app { display: flex; gap: 32px; align-items: center; justify-content: center; height: 100%; padding: 24px; box-sizing: border-box; }
-.controls { display: flex; flex-direction: column; gap: 14px; width: 280px; }
-.controls h1 { margin: 0; font-size: 28px; }
-.controls p { margin: 0; color: #5c5866; }
-label { display: flex; flex-direction: column; gap: 6px; font-weight: 600; }
-input[type=text] { font: inherit; padding: 8px; border: 1px solid #c9c4d1; border-radius: 6px; }
-button { font: inherit; font-weight: 700; padding: 10px; border: 0; border-radius: 6px; background: #1d1b22; color: #fff; cursor: pointer; }
-canvas { width: min(70vh, 60vw); height: min(70vh, 60vw); box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2); }
-body.shot-cover .controls { display: none; }
-body.shot-cover .app { padding: 0; }
-body.shot-cover canvas { width: 100vw; height: 100vh; box-shadow: none; }
+/* Neon Shore Cover Lab — editor chrome. Dark violet stage, neon pink/orange accents. */
+@font-face {
+  font-family: 'Anton';
+  src: url('./fonts/Anton-Regular.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Pacifico';
+  src: url('./fonts/Pacifico-Regular.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Bebas Neue';
+  src: url('./fonts/BebasNeue-Regular.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Archivo Black';
+  src: url('./fonts/ArchivoBlack-Regular.ttf') format('truetype');
+  font-display: swap;
+}
+
+:root {
+  --bg: #0d0518;
+  --panel: #1a0b2e;
+  --panel-2: #221040;
+  --line: #3b1d5e;
+  --ink: #f5eefc;
+  --muted: #b9a3d6;
+  --pink: #ff2e88;
+  --orange: #ff5e3a;
+  --teal: #2dd4bf;
+  --gold: #ffd166;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, sans-serif; }
+body { display: flex; flex-direction: column; }
+
+.topbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 12px 20px; border-bottom: 1px solid var(--line);
+  background: linear-gradient(90deg, #1c0b33, #2a0f45 55%, #3d0f3d);
+}
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.brand-mark {
+  flex: 0 0 auto; width: 44px; height: 44px; display: grid; place-items: center;
+  font-family: 'Anton', sans-serif; font-size: 19px; letter-spacing: 1px; color: #14041f;
+  background: linear-gradient(135deg, var(--gold), var(--orange) 45%, var(--pink));
+  border-radius: 10px; transform: rotate(-4deg);
+}
+.brand h1 { margin: 0; font-family: 'Bebas Neue', sans-serif; font-size: 30px; letter-spacing: 2px; line-height: 1; }
+.brand p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+.top-actions { display: flex; gap: 8px; flex: 0 0 auto; }
+
+.steps { display: flex; gap: 8px; padding: 10px 20px 0; }
+.step {
+  flex: 1; text-align: center; padding: 7px 4px; border-radius: 8px; font-size: 13px;
+  color: var(--muted); background: var(--panel); border: 1px solid var(--line);
+}
+.step b {
+  display: inline-grid; place-items: center; width: 20px; height: 20px; margin-right: 6px;
+  border-radius: 50%; background: var(--panel-2); border: 1px solid var(--line); font-size: 12px;
+}
+.step.active { color: #fff; border-color: var(--pink); }
+.step.active b { background: var(--pink); border-color: var(--pink); color: #fff; }
+.step.done { color: var(--teal); border-color: var(--teal); }
+.step.done b { background: var(--teal); border-color: var(--teal); color: #06231f; }
+
+.layout { display: flex; gap: 20px; padding: 16px 20px 20px; align-items: flex-start; }
+.stage-col { flex: 1 1 auto; min-width: 0; }
+.stage-wrap {
+  position: relative; background: #05030a; border: 1px solid var(--line); border-radius: 12px;
+  padding: 14px; display: grid; place-items: center; overflow: hidden;
+}
+.stage-wrap.dragging { border-color: var(--teal); outline: 2px dashed var(--teal); outline-offset: -8px; }
+.stage-wrap canvas {
+  max-width: 100%; max-height: 66vh; width: auto; height: auto;
+  border-radius: 4px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55); cursor: grab;
+  background: #12041f; transform-origin: center center;
+}
+.stage-wrap canvas:active { cursor: grabbing; }
+.drop-hint {
+  position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%);
+  color: var(--muted); font-size: 12px; pointer-events: none; opacity: 0.7;
+}
+.stage-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 12px; color: var(--muted); font-size: 13px; }
+.stage-bar .zoom { display: flex; align-items: center; gap: 8px; }
+.stage-bar input[type="range"] { width: 130px; accent-color: var(--pink); }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.chips button {
+  min-width: 34px; padding: 6px 9px; border-radius: 999px; font-size: 13px;
+  border: 1px solid var(--line); background: var(--panel); color: var(--muted);
+}
+.chips button[aria-pressed="true"] { background: var(--pink); border-color: var(--pink); color: #fff; font-weight: 700; }
+#status { min-height: 1.3em; margin: 10px 0 0; color: var(--teal); font-size: 13px; }
+.keys { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+
+.side { flex: 0 0 330px; display: flex; flex-direction: column; gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+.card h2 {
+  margin: 0 0 10px; font-family: 'Bebas Neue', sans-serif; font-size: 21px;
+  letter-spacing: 2px; color: var(--gold);
+}
+.card label { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; font-size: 13px; color: var(--muted); }
+.card label:last-child { margin-bottom: 0; }
+.card input[type="text"], .card select {
+  font: inherit; color: var(--ink); background: var(--panel-2);
+  border: 1px solid var(--line); border-radius: 7px; padding: 8px 10px;
+}
+.card input[type="text"]:focus, .card select:focus { outline: 2px solid var(--pink); outline-offset: 1px; }
+.card input[type="file"] { font: inherit; color: var(--muted); }
+.check, .heat { flex-direction: row !important; align-items: center; gap: 8px !important; color: var(--ink) !important; }
+.check input, .heat input { accent-color: var(--pink); }
+.heat input { flex: 1; }
+#heatVal { color: var(--gold); letter-spacing: 2px; }
+.sub { margin: -4px 0 8px; color: var(--muted); font-size: 13px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.row:last-child { margin-bottom: 0; }
+.grid-btns { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.grid-btns button { min-height: 44px; }
+button {
+  font: inherit; font-weight: 600; padding: 9px 12px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--panel-2); color: var(--ink);
+}
+button:hover { border-color: var(--pink); }
+button.primary { background: linear-gradient(135deg, var(--orange), var(--pink)); border: 0; color: #fff; }
+button[aria-pressed="true"] { background: var(--pink); border-color: var(--pink); color: #fff; }
+.grade-swatch { display: flex; align-items: center; gap: 8px; text-align: left; }
+.grade-swatch i {
+  flex: 0 0 26px; height: 26px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.35);
+}
+.thumbs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.thumbs img, .thumbs canvas {
+  width: 64px; height: 64px; object-fit: cover; border-radius: 8px; cursor: pointer;
+  border: 2px solid transparent; display: block;
+}
+.thumbs img:hover, .thumbs canvas:hover { border-color: var(--pink); }
+.note { margin: 0; color: var(--muted); font-size: 12.5px; }
+
+/* Screenshot mode: cover alone, edge to edge. */
+body.shot-cover { background: #05030a; }
+body.shot-cover .topbar, body.shot-cover .side, body.shot-cover .stage-bar,
+body.shot-cover .chips, body.shot-cover #status, body.shot-cover .keys,
+body.shot-cover .steps, body.shot-cover .drop-hint { display: none; }
+body.shot-cover .layout { padding: 0; }
+body.shot-cover .stage-wrap { padding: 0; border: 0; background: none; border-radius: 0; }
+body.shot-cover .stage-wrap canvas { max-height: 100vh; box-shadow: none; border-radius: 0; }
